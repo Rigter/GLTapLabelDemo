@@ -26,9 +26,11 @@
 
 @synthesize delegate;
 @synthesize linkColor;
+@synthesize underlineLink;
 
 -(void)drawTextInRect:(CGRect)rect
 {
+	CGContextRef context = UIGraphicsGetCurrentContext();
     UIColor *origColor = [self textColor];
     [origColor set];
     if(!hotFont){
@@ -47,6 +49,8 @@
     __block CGPoint drawPoint = CGPointMake(0,0);
     NSString *read;
     NSScanner *s = [NSScanner scannerWithString:self.text];
+	[s setCharactersToBeSkipped: nil];
+	
     while ([s scanUpToCharactersFromSet:[NSCharacterSet symbolCharacterSet] intoString:&read]) {
         NSArray *origWords = [read componentsSeparatedByCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
         NSMutableArray *words = [NSMutableArray array];
@@ -74,6 +78,8 @@
             [words addObject:origWord];
         }
         
+		CGContextSetStrokeColorWithColor( context, self.linkColor.CGColor );
+		CGContextSetLineWidth( context,  1.0 );
         [words enumerateObjectsUsingBlock:^(NSString *word, NSUInteger idx, BOOL *stop) {
             BOOL hot = [word hasPrefix:@"#"] || [word hasPrefix:@"@"];
             UIFont *f= hot ? hotFont : self.font;
@@ -85,6 +91,11 @@
                 [hotZones addObject:[NSValue valueWithCGRect:CGRectMake(drawPoint.x, drawPoint.y, s.width, s.height)]];
                 [hotWords addObject:word];
                 [linkColor set];
+				if ( self.underlineLink )
+				{
+					CGContextMoveToPoint( context, drawPoint.x, drawPoint.y+s.height );
+					CGContextAddLineToPoint( context, drawPoint.x+s.width, drawPoint.y+s.height );
+				}
             }
             [word drawAtPoint:drawPoint withFont:f];
             [origColor set];
@@ -95,7 +106,8 @@
         while ([s scanCharactersFromSet:[NSCharacterSet symbolCharacterSet] intoString:&read]) {
             for(int idx=0;idx<read.length;idx=idx+2)
             {
-                NSString *word=[read substringWithRange:NSMakeRange(idx, 2)];
+				int charactersToRead = MIN( 2, read.length );
+                NSString *word=[read substringWithRange:NSMakeRange(idx, charactersToRead)];
                 CGSize s = [word sizeWithFont:self.font];
                 if(drawPoint.x + s.width > rect.size.width) {
                     drawPoint = CGPointMake(0, drawPoint.y + s.height);
@@ -105,6 +117,8 @@
             }
         }
     }
+	if ( self.underlineLink )
+		CGContextStrokePath( context );
 }
 
 -(void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event

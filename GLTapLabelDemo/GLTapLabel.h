@@ -34,5 +34,6 @@
 
 @property(nonatomic,assign) id<GLTapLabelDelegate> delegate;
 @property(nonatomic,retain) UIColor *linkColor;
+@property(nonatomic,assign) BOOL underlineLink;
 
 @end
